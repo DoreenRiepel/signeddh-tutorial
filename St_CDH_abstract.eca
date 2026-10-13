@@ -39,6 +39,9 @@ axiom shared_keyC x y:
   => y \in dsk
   => (g ^ x) ^ y = (g ^ y) ^ x.
 
+axiom public_key_injective x x':
+  g ^ x = g ^ x' => x = x'.
+
 (*
 We now define directly the multi-instance (q1, q2)-St_CDH experiment
 from Riepel and Rösler [Figure2, 0].
@@ -123,23 +126,13 @@ module St_CDH (A : St_CDH_Adv) = {
       return r;
     }
 
-    (*** This is the only oracle that is not a straightforward
-    translation of the pen-and-paper definitions ***)
     proc ddh(x, y, z) = {
-      var jo, io;
+      var jo;
       var r <- false;
 
-      (* The definition uses an existential condition that *binds* the
-         variable in the if branch; we don't have that.
-         Instead, we search for an element that meets the condition,
-         and branch on whether it exists.
-
-         The rest is straightforward-ish.
-      *)
-      io <- find (fun _ x_i => x = g ^ x_i /\ z = y ^ x_i) x_map;
-      if (io is Some i) {
-        jo <- find (fun _ y_j => y = g ^ y_j) y_map;
-        if (jo <> None /\ i \notin cr_1 /\ oget jo \notin cr_2) {
+      if (has (fun _ x_i => x = g ^ x_i /\ z = y ^ x_i) x_map) {
+        if (has (fun i xi=> x = g ^ xi /\ i \notin cr_1) x_map /\
+            has (fun j yj=> y = g ^ yj /\ j \notin cr_2) y_map) {
           win <- true;
         }
         r <- true;
